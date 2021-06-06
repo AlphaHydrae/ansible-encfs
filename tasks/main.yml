@@ -1,0 +1,66 @@
+---
+
+- name: Install macFUSE
+  homebrew_cask:
+    name: macfuse
+    state: present
+  become: true
+  become_user: "{{ encfs_homebrew_user }}"
+  tags:
+    - encfs
+  when: ansible_pkg_mgr == 'homebrew'
+
+- name: Install EncFS dependencies
+  homebrew:
+    name:
+      - cmake
+      - gettext
+  become: true
+  become_user: "{{ encfs_homebrew_user }}"
+  tags:
+    - encfs
+
+# Other package managers
+- fail: msg="{{ ansible_pkg_mgr }} is not a supported package manager (Homebrew is supported)"
+  when: ansible_pkg_mgr != 'homebrew'
+
+- name: Create temporary build directory for EncFS
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: build
+  become: true
+  become_user: "{{ encfs_user }}"
+  register: encfs_tmp_dir
+  tags:
+    - encfs
+
+- name: Clone EncFS repository
+  git:
+    repo: "{{ encfs_repo }}"
+    dest: "{{ encfs_tmp_dir.path }}"
+    version: "{{ encfs_version }}"
+    force: true
+  become: true
+  become_user: "{{ encfs_user }}"
+  tags:
+    - encfs
+
+- name: Build EncFS
+  command: "{{ encfs_tmp_dir.path }}/build.sh"
+  args:
+    chdir: "{{ encfs_tmp_dir.path }}"
+  environment:
+    PATH: "/usr/local/bin:/usr/local/sbin:{{ ansible_env.PATH }}"
+  become: true
+  become_user: "{{ encfs_user }}"
+  tags:
+    - encfs
+
+- name: Install EncFS
+  command: "make install"
+  args:
+    chdir: "{{ encfs_tmp_dir.path }}/build"
+  become: true
+  become_user: "{{ encfs_user }}"
+  tags:
+    - encfs

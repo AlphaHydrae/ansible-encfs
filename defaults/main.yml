@@ -1,0 +1,7 @@
+---
+encfs_user: "{{ user }}"
+encfs_group: "{{ group | default(encfs_user) }}"
+encfs_user_home: "{{ host_user_homes }}/{{ encfs_user }}"
+encfs_repo: https://github.com/vgough/encfs.git
+encfs_version: v1.9.5
+encfs_homebrew_user: "{{ homebrew_user | default(encfs_user) | default(omit) }}"
